@@ -1,0 +1,222 @@
+select * from Diabetes_prediction;
+--1. Retrieve the Patient_id and ages of all patients.
+select Patient_id,YEAR(getdate())-YEAR(Date_Of_Birth) As Ages from dbo.Diabetes_prediction;
+--SELECT Patient_id ,DATEDIFF(YEAR, Date_Of_Birth, GETDATE()) AS Age
+--FROM dbo.Diabetes_prediction;
+
+--2. Select all female patients who are older than 40.
+select gender,Ages from Diabetes_prediction where gender='Female'and Ages>'40';
+
+--3. Calculate the average BMI of patients.
+select AVG(bmi) as Avrage_Bmi from Diabetes_prediction;
+
+--4. List patients in descending order of blood glucose levels.
+select EmployeeName,Patient_id,blood_glucose_level from Diabetes_prediction 
+order by blood_glucose_level DESC;
+
+--5. Find patients who have hypertension and diabetes.
+select EmployeeName,Patient_id,hypertension,diabetes from Diabetes_prediction 
+where hypertension=1 and diabetes=1 Order by EmployeeName ;
+
+--6. Determine the number of patients with heart disease.Count(heart_disease)as No_of_Heart_patient
+select count(heart_disease) as No_of_Heart_Patient from Diabetes_prediction 
+where heart_disease=1;
+
+--7. Group patients by smoking history and count how many smokers and nonsmokers there are.
+select smoking_history,count(*) as total_paitents from Diabetes_prediction where smoking_history in ('never','Current') GROUP BY smoking_history;
+--or
+SELECT
+    smoking_history,
+    COUNT(*) AS TotalPatients,
+    SUM(CASE WHEN smoking_history = 'ever' THEN 1 ELSE 0 END) AS Smokers,
+    SUM(CASE WHEN smoking_history = 'Current' THEN 1 ELSE 0 END) AS NonSmokers
+FROM Diabetes_prediction
+GROUP BY smoking_history;
+
+
+--8. Retrieve the Patient_ids of patients who have a BMI greater than the average BMI.
+ 
+select Patient_id,bmi from Diabetes_prediction where bmi > (select avg(bmi) from Diabetes_prediction);
+
+
+--9. Find the patient with the highest HbA1c level and the patient with the lowest
+--HbA1clevel.
+select * 
+from(select top 1 Patient_id,max(HbA1c_level) as highest_HbA1c_level 
+	from Diabetes_prediction 
+	group by Patient_id 
+	order by highest_HbA1c_level 
+Desc)as Final_Higest_HbA1c
+union all
+select * 
+from(select top 1 Patient_id,min(HbA1c_level) as lowest_HbA1c_level 
+	from Diabetes_prediction  
+	group by Patient_id 
+	order by lowest_HbA1c_level ASC
+)as Final_low_HbA1c;
+
+
+--or solution
+SELECT *
+FROM (
+    SELECT TOP 10.* 
+    FROM Diabetes_prediction
+    ORDER BY HbA1c_level DESC
+) AS Final_Highest_HbA1c
+UNION ALL
+SELECT *
+FROM (
+    SELECT TOP 10 *
+    FROM Diabetes_prediction
+    ORDER BY HbA1c_level ASC
+) AS Final_low_HbA1c;
+
+
+
+--10. Calculate the age of patients in years (assuming the current date as of now)
+
+select EmployeeName,Patient_id, YEAR(getdate())- year(Date_Of_Birth) as Ages from Diabetes_prediction ;
+or
+SELECT
+    EmployeeName,Patient_id,
+    --Date_Of_Birth,
+    DATEDIFF(YEAR, Date_Of_Birth, GETDATE()) AS Age
+FROM Diabetes_prediction;
+
+--11. Rank patients by blood glucose level within each gender group.
+--The blood sugar level between 50 mg/dL - 145 mg/dL is considered as an excellent control,
+--between 150 mg/dL - 200 mg/dL it is considered as an average control and 
+--beyond 215 mg/dL you should work on your diabetes well.
+
+select Patient_id,gender,blood_glucose_level,
+Case
+When blood_glucose_level between 50 AND 145 Then '1'
+When blood_glucose_level between 150 AND 200 Then '2'
+When blood_glucose_level > 215 then '3'
+end AS glucose_level_rank 
+from Diabetes_prediction ORDER BY gender, blood_glucose_level;
+
+or
+
+SELECT
+   Patient_id,
+   gender,
+   blood_glucose_level,
+    Rank() OVER (PARTITION BY gender ORDER BY blood_glucose_level ASC) AS rank
+FROM Diabetes_prediction;
+
+
+
+
+
+--12. Update the smoking history of patients who are older than 50 to "Ex-smoker."
+update Diabetes_prediction
+set smoking_history ='Ex-smoker'
+where Ages > 30;
+
+Select max(Ages) from Diabetes_prediction;
+Select * from Diabetes_prediction where Ages > 30;
+
+--13. Insert a new patient into the database with sample data.
+
+
+INSERT INTO Diabetes_prediction (EmployeeName, Patient_id, gender, Date_Of_Birth, hypertension, heart_disease, smoking_history, bmi, HbA1c_level, blood_glucose_level, diabetes)
+VALUES
+    ('John Doe', 'PT100101', 'Male', '1990-05-15', 0, 0, 'Ex-smoker', 25.5, 6.2, 120, 0),
+    ('Jane Smith', 'PT100102', 'Female', '1985-08-20', 1, 0, 'Ex-smoker', 28.3, 7.5, 160, 1),
+    ('Alice Johnson', 'PT100103', 'Female', '1982-03-10', 1, 1, 'Ex-smoker', 30.1, 7.8, 180, 1);
+   
+Select * from Diabetes_prediction where EmployeeName IN ('John Doe','Jane Smith','Alice Johnson');
+-- Add more rows as needed
+
+
+--14. Delete all patients with heart disease from the database.
+  
+delete from Diabetes_prediction
+where heart_disease = 1;
+Select * from Diabetes_prediction where heart_disease = 1;
+
+--15. Find patients who have hypertension but not diabetes using the EXCEPT operator
+
+select Patient_id,hypertension from Diabetes_prediction where hypertension=1
+Except
+select Patient_id,hypertension from Diabetes_prediction where diabetes=1;
+
+--16. Define a unique constraint on the "patient_id" column to ensure its values are unique.
+Alter Table Diabetes_prediction
+Add Constraint UK_patient_id UNIQUE (patient_id);
+
+
+--17. Create a view that displays the Patient_ids, ages, and BMI of patients.
+CREATE VIEW Patients_details AS
+select patient_id,datediff(Year,Date_of_birth,getdate()) 
+as Ages,BMI from Diabetes_prediction;
+
+select * from Patients_details;
+--18. Suggest improvements in the database schema to reduce data redundancy and
+--improve data integrity.
+
+To reduce data redundancy and improve data integrity in a database schema, consider the following recommendations:
+
+### 1. **Normalization**:
+   - **Apply normalization techniques (1NF, 2NF, 3NF)** to organize the database structure. This reduces duplicate data by breaking down tables into smaller, more focused entities.
+     - **First Normal Form (1NF)**: Ensure each table column contains atomic values and each record is unique.
+     - **Second Normal Form (2NF)**: Ensure that all non-key attributes are fully functionally dependent on the primary key.
+     - **Third Normal Form (3NF)**: Ensure that all non-key attributes are not dependent on other non-key attributes.
+
+### 2. **Eliminate Duplicate Data**:
+   - Identify and remove duplicate data from tables. Redundant columns or repeating groups can be moved to separate tables, creating a more efficient and non-redundant structure.
+
+### 3. **Use Foreign Keys for Relationships**:
+   - Introduce **foreign keys** to establish relationships between tables. This enhances referential integrity by ensuring that values in one table correspond to valid entries in another.
+
+### 4. **Implement Primary Keys**:
+   - Ensure that each table has a **primary key** to uniquely identify records. This enforces uniqueness and prevents duplication.
+
+### 5. **Use Indexing and Constraints**:
+   - Apply **unique constraints** where necessary to avoid duplicate entries.
+   - Use **NOT NULL** constraints to prevent null values in fields where data integrity is critical.
+   - Implement **indexes** to improve the efficiency of data retrieval, but avoid over-indexing to prevent performance issues.
+
+### 6. **Implement Referential Integrity Rules**:
+   - Enforce **referential integrity** using `ON DELETE` and `ON UPDATE` rules. This ensures that related data in different tables is consistent (e.g., cascading deletes or updates).
+
+### 7. **Create Lookup Tables**:
+   - Use **lookup/reference tables** for values that are repeated frequently (e.g., status codes, categories) to minimize redundant storage and ensure consistency.
+
+### 8. **Denormalization (if needed)**:
+   - In some cases, **denormalization** may improve query performance, but this should be done carefully to avoid reintroducing redundancy. Consider denormalizing only when there’s a strong need for faster reads.
+
+### 9. **Data Integrity Rules**:
+   - Use **check constraints** to enforce domain integrity, ensuring that data meets specified criteria (e.g., value ranges or formats).
+
+### 10. **Document the Schema**:
+   - Maintain a **clear schema documentation** to track the relationships, constraints, and dependencies within the database. This helps in maintaining data integrity and avoiding redundancy during future changes.
+
+By applying these improvements, you can optimize your database schema for better efficiency, reduce redundancy, and enhance data integrity.
+--19. Explain how you can optimize the performance of SQL queries on this dataset
+1. Indexing:
+Create Indexes on frequently queried columns (e.g., patient ID, age, blood sugar levels). Indexes help the database engine to retrieve records faster.
+Example: CREATE INDEX idx_age ON diabetes_prediction(age);
+Use Composite Indexes if queries involve filtering on multiple columns.
+Example: CREATE INDEX idx_age_bmi ON diabetes_prediction(age, bmi);
+2. Query Optimization:
+Use SELECT Statements Wisely: Only select the columns you need instead of using SELECT *. This reduces the amount of data processed and returned.
+Example: SELECT age, glucose FROM diabetes_prediction WHERE age > 50;
+Avoid Nested Queries: Replace subqueries with joins wherever possible. Joins are generally more efficient than subqueries.
+Inefficient: SELECT * FROM diabetes_prediction WHERE age = (SELECT MAX(age) FROM diabetes_prediction);
+Optimized: SELECT dp.* FROM diabetes_prediction dp INNER JOIN (SELECT MAX(age) AS max_age FROM diabetes_prediction) AS max_dp ON dp.age = max_dp.max_age;
+3. Use WHERE Clauses Efficiently:
+Filter data at the database level with optimized WHERE clauses instead of filtering it in your application. Avoid functions or calculations on columns in the WHERE clause, as it prevents index usage.
+Example: SELECT * FROM diabetes_prediction WHERE glucose > 140; is better than SELECT * FROM diabetes_prediction WHERE glucose + 10 > 150;.
+4. Partitioning:
+Partition Large Tables: Use horizontal partitioning (range partitioning) if the dataset is large and contains time-based or range-based data (e.g., patient age groups, time intervals).
+Example: Partition the diabetes dataset based on age groups: under 30, 30-50, over 50.
+5. Limit the Results:
+If you don’t need all records, use the LIMIT clause to reduce the number of rows returned, especially in exploratory analysis.
+Example: SELECT * FROM diabetes_prediction ORDER BY glucose DESC LIMIT 100;
+6. Use Efficient Joins:
+Choose the Right Join: If you’re joining multiple tables, use the most efficient join (e.g., INNER JOIN) and ensure the join columns are indexed.
+Joining on Indexed Columns: Make sure that the columns involved in the join operation are indexed, which can significantly improve performance.
+7. Denormalization (if needed):
+In some cases, denormalizing the dataset (storing calculated values) can optimize read-heavy queries, such as pre-calculating prediction scores or storing aggregated data (e.g., average glucose levels per patient).
