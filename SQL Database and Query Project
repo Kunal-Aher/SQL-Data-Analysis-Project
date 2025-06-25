@@ -1,0 +1,1064 @@
+
+DBT - SQL Database and Query Project
+
+This repository contains a complete SQL project, including the schema definition for a company database and a comprehensive set of 51 queries to analyze employee, department, and salary data.
+
+Database Schema
+
+The database dac_dbt is designed to manage information about employees, their roles, departments, salaries, and work history. It consists of six main tables.
+
+Tables
+
+dept: Stores department information.
+
+deptcode (VARCHAR(15), PK): Unique code for the department.
+
+dept_name (VARCHAR(60)): Name of the department.
+
+budget (INTEGER): Budget allocated to the department.
+
+desig: Stores designation (job title) information.
+
+desigcode (VARCHAR(15), PK): Unique code for the designation.
+
+designame (VARCHAR(15)): Name of the designation.
+
+grade: Stores salary grade and level details.
+
+gradecode (VARCHAR(15), PK): Code for the grade.
+
+gradelevel (VARCHAR(30), PK): Level within the grade.
+
+gradedescription (VARCHAR(60)): Description of the grade.
+
+basic (INTEGER): The standard basic pay for this grade.
+
+emp: The central table for employee details.
+
+empcode (VARCHAR(15), PK): Unique code for the employee.
+
+empname (VARCHAR(60)): Employee's full name.
+
+deptcode (VARCHAR(15), FK -> dept): Department the employee belongs to.
+
+birthdate (DATE): Employee's date of birth.
+
+joindate (DATE): Employee's date of joining.
+
+sex (CHAR(1)): 'M', 'F', or 'T'.
+
+desigcode (VARCHAR(15), FK -> desig): Employee's designation.
+
+supcode (VARCHAR(15), FK -> emp): Supervisor's employee code (self-referencing).
+
+gradecode, gradelevel (FK -> grade): Employee's salary grade.
+
+basicpay (INTEGER): Employee's current basic pay.
+
+salary: Tracks monthly salary records for each employee.
+
+empcode (VARCHAR(15), PK, FK -> emp): Employee's code.
+
+salmonth (DATE, PK): The month for which the salary is recorded.
+
+basic (INT): Basic pay for that month.
+
+allow (INT): Allowances for that month.
+
+deduct (INT): Deductions for that month.
+
+history: Logs changes in an employee's designation, grade, and pay.
+
+empcode (VARCHAR(15), PK, FK -> emp): Employee's code.
+
+changedate (DATE, PK): Date of the change.
+
+desigcode (VARCHAR(15), PK, FK -> desig): The new designation code.
+
+gradecode, gradelevel (PK, FK -> grade): The new grade.
+
+basicpay (INT): Basic pay after the change.
+
+SQL Query Report
+
+Here are 51 SQL queries demonstrating various data retrieval and analysis techniques.
+
+Section 1: Basic Retrieval
+
+1. List the name, employee code and designation of each employee.
+
+Generated sql
+SELECT
+    e.empname,
+    e.empcode,
+    d.designame
+FROM
+    emp e
+JOIN
+    desig d ON e.desigcode = d.desigcode;
+
+
+2. List all the departments and their budgets.
+
+Generated sql
+SELECT
+    dept_name,
+    budget
+FROM
+    dept
+ORDER BY
+    budget;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+3. List the employees and their respective department names.
+
+Generated sql
+SELECT
+    e.empname,
+    d.dept_name
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+4. List the employees who do not have a superior.
+
+Generated sql
+SELECT
+    empcode,
+    empname
+FROM
+    emp
+WHERE
+    supcode IS NULL;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+5. List the employees who are working directly under the superior-most employee.
+
+Generated sql
+SELECT
+    empcode,
+    empname
+FROM
+    emp
+WHERE
+    supcode = (SELECT empcode FROM emp WHERE supcode IS NULL);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+6. List the employee(s) who is senior-most in the office.
+
+Generated sql
+SELECT
+    empcode,
+    empname,
+    joindate
+FROM
+    emp
+WHERE
+    joindate = (SELECT MIN(joindate) FROM emp);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+7. List the employees who will retire from the office next (assuming retirement age is 60).
+
+Generated sql
+SELECT
+    empname,
+    birthdate,
+    TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) AS age
+FROM
+    emp
+WHERE
+    TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) < 60
+ORDER BY
+    age DESC;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+8. List the departments with their respective department managers.
+
+Generated sql
+SELECT
+    d.dept_name,
+    e.empname AS manager_name
+FROM
+    dept d
+JOIN
+    emp e ON d.deptcode = e.deptcode
+WHERE
+    e.desigcode = 'MNGR';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+9. List the employees who work as a ‘manager’.
+
+Generated sql
+SELECT
+    e.empname,
+    d.dept_name,
+    de.designame
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+JOIN
+    desig de ON e.desigcode = de.desigcode
+WHERE
+    de.designame = 'Manager';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+Section 2: Conditional Filtering
+
+10. List the number of employees working for either ‘accounts’, ‘personal’, or ‘purchase’ departments.
+
+Generated sql
+SELECT
+    d.dept_name,
+    COUNT(e.empcode) AS number_of_employees
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+WHERE
+    d.dept_name IN ('Accounts', 'Personal', 'Purchase')
+GROUP BY
+    d.dept_name;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+11. List the employees working for ‘accounts’ or ‘personal’ department.
+
+Generated sql
+SELECT
+    e.empname,
+    d.dept_name
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+WHERE
+    d.dept_name IN ('Accounts', 'Personal');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+12. List the employees working for ‘accounts’ AND ‘personal’ departments.
+(Note: No single employee can be in two departments at once. This query shows all employees from both departments.)
+
+Generated sql
+SELECT
+    e.empname,
+    d.dept_name
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+WHERE
+    d.dept_name IN ('Accounts', 'Personal')
+ORDER BY
+    d.dept_name;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+13. List the employees working for the ‘accounts’ department.
+
+Generated sql
+SELECT
+    e.empname,
+    d.dept_name
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+WHERE
+    d.dept_name = 'Accounts';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+14. List the youngest employee of the office.
+
+Generated sql
+SELECT
+    empname,
+    birthdate
+FROM
+    emp
+WHERE
+    birthdate = (SELECT MAX(birthdate) FROM emp);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+15. List the employees who are drawing basic pay not equal to 12400.
+
+Generated sql
+SELECT
+    empcode,
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay <> 12400;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+16. List the employees who are drawing basic salary between 11000 and 12000.
+
+Generated sql
+SELECT
+    empcode,
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay BETWEEN 11000 AND 12000;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+17. List the employees who are drawing basic salary not between 11000 and 12000.
+
+Generated sql
+SELECT
+    empcode,
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay NOT BETWEEN 11000 AND 12000;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+18. List employees who got a salary allowance between Rs. 1000 to Rs. 1500 in January 2012.
+
+Generated sql
+SELECT
+    e.empname,
+    s.allow,
+    s.salmonth
+FROM
+    emp e
+JOIN
+    salary s ON e.empcode = s.empcode
+WHERE
+    s.allow BETWEEN 1000 AND 1500 AND s.salmonth = '2012-01-01';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+19. List the employees whose name ends with ‘i’ or ‘y’.
+
+Generated sql
+SELECT
+    empcode,
+    empname
+FROM
+    emp
+WHERE
+    empname LIKE '%i' OR empname LIKE '%y';
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+Section 3: Calculations and Functions
+
+20. List the employees who have at least 25 years of experience.
+
+Generated sql
+SELECT
+    empname,
+    joindate,
+    TIMESTAMPDIFF(YEAR, joindate, CURDATE()) AS experience
+FROM
+    emp
+HAVING
+    experience >= 25
+ORDER BY
+    experience DESC;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+21. List the ‘Salesmen’ who have 20 to 30 years of experience.
+
+Generated sql
+SELECT
+    e.empname,
+    d.designame,
+    TIMESTAMPDIFF(YEAR, e.joindate, CURDATE()) AS experience
+FROM
+    emp e
+JOIN
+    desig d ON e.desigcode = d.desigcode
+WHERE
+    d.designame = 'Sales Man'
+HAVING
+    experience BETWEEN 20 AND 30;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+22. List the basic salary and half of the basic salary for each employee.
+
+Generated sql
+SELECT
+    empname,
+    basicpay,
+    (basicpay / 2) AS half_basic
+FROM
+    emp;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+23. List the employees and their latest take-home pay (basic + allowance - deductions).
+
+Generated sql
+SELECT
+    e.empname,
+    (s.basic + s.allow - s.deduct) AS take_home_pay
+FROM
+    emp e
+JOIN
+    salary s ON e.empcode = s.empcode
+WHERE
+    s.salmonth = (SELECT MAX(salmonth) FROM salary WHERE empcode = e.empcode);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+24. List the latest take-home pay of each employee in the ‘Accounts’ department.
+
+Generated sql
+SELECT
+    e.empname,
+    (s.basic + s.allow - s.deduct) AS take_home_pay
+FROM
+    emp e
+JOIN
+    salary s ON e.empcode = s.empcode
+JOIN
+    dept d ON e.deptcode = d.deptcode
+WHERE
+    d.dept_name = 'Accounts' AND
+    s.salmonth = (SELECT MAX(salmonth) FROM salary WHERE empcode = e.empcode);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+25. List employees and their respective ages.
+
+Generated sql
+SELECT
+    empname,
+    TIMESTAMPDIFF(YEAR, birthdate, CURDATE()) AS age
+FROM
+    emp;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+26. List all ‘Accounts’ department employees, ordered first by age and then by name.
+
+Generated sql
+SELECT
+    e.empname,
+    TIMESTAMPDIFF(YEAR, e.birthdate, CURDATE()) AS age
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+WHERE
+    d.dept_name = 'Accounts'
+ORDER BY
+    age, e.empname;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+Section 4: Aggregation and Grouping
+
+27. List the number of employees directly reporting to ‘Reddy’.
+
+Generated sql
+SELECT
+    COUNT(*) AS reddy_subordinates
+FROM
+    emp
+WHERE
+    supcode = (SELECT empcode FROM emp WHERE empname = 'Reddy');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+28. List employees who supervise others and the number of their subordinates, ordered from most to least.
+
+Generated sql
+SELECT
+    supervisor.empname AS supervisor_name,
+    COUNT(subordinate.empcode) AS subordinate_count
+FROM
+    emp AS supervisor
+JOIN
+    emp AS subordinate ON supervisor.empcode = subordinate.supcode
+GROUP BY
+    supervisor.empname
+ORDER BY
+    subordinate_count DESC;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+29. List supervisors who have a minimum of 3 employees working under them.
+
+Generated sql
+SELECT
+    supervisor.empname AS supervisor_name,
+    COUNT(subordinate.empcode) AS subordinate_count
+FROM
+    emp AS supervisor
+JOIN
+    emp AS subordinate ON supervisor.empcode = subordinate.supcode
+GROUP BY
+    supervisor.empname
+HAVING
+    COUNT(subordinate.empcode) >= 3;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+30. List the minimum and maximum take-home salaries drawn in each grade code.
+
+Generated sql
+SELECT
+    e.gradecode,
+    MIN(s.basic + s.allow - s.deduct) AS min_salary,
+    MAX(s.basic + s.allow - s.deduct) AS max_salary
+FROM
+    emp e
+JOIN
+    salary s ON e.empcode = s.empcode
+GROUP BY
+    e.gradecode
+ORDER BY
+    e.gradecode;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+31. List the employees with the names of their supervisors.
+
+Generated sql
+SELECT
+    e.empname AS employee_name,
+    s.empname AS supervisor_name
+FROM
+    emp e
+LEFT JOIN
+    emp s ON e.supcode = s.empcode;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+32. List the number of officers reporting to each supervisor having more than 3 people under them.
+
+Generated sql
+SELECT
+    s.empname AS supervisor_name,
+    COUNT(e.empcode) AS num_of_officers
+FROM
+    emp e
+JOIN
+    emp s ON e.supcode = s.empcode
+GROUP BY
+    s.empname
+HAVING
+    COUNT(e.empcode) > 3;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+33. List the employees who have not received any promotion.
+(This assumes a single entry in the history table means no promotion.)
+
+Generated sql
+SELECT
+    e.empname
+FROM
+    emp e
+JOIN (
+    SELECT empcode
+    FROM history
+    GROUP BY empcode
+    HAVING COUNT(*) = 1
+) AS h ON e.empcode = h.empcode;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+34. List the employee with the maximum number of promotions and the count.
+
+Generated sql
+SELECT
+    e.empname,
+    COUNT(h.changedate) AS promotion_count
+FROM
+    history h
+JOIN
+    emp e ON h.empcode = e.empcode
+GROUP BY
+    e.empname
+ORDER BY
+    promotion_count DESC
+LIMIT 1;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+35. List the employees who got promoted in the year 1991.
+
+Generated sql
+SELECT DISTINCT
+    e.empname
+FROM
+    emp e
+JOIN
+    history h ON e.empcode = h.empcode
+WHERE
+    YEAR(h.changedate) = 1991;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+36. List the department budget and the total monthly salary drawn by that department.
+
+Generated sql
+SELECT
+    d.dept_name,
+    d.budget,
+    SUM(s.basic + s.allow - s.deduct) AS total_salary_drawn
+FROM
+    dept d
+JOIN
+    emp e ON d.deptcode = e.deptcode
+JOIN
+    salary s ON e.empcode = s.empcode
+WHERE
+    s.salmonth = '2012-02-01' -- Assuming for the latest available month
+GROUP BY
+    d.dept_name, d.budget;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+37. Display the employee names in full uppercase.
+
+Generated sql
+SELECT UPPER(empname) AS employee_name FROM emp;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+Section 5: Subqueries and Advanced Analysis
+
+38. List all employees drawing a salary higher than ‘Jain’.
+
+Generated sql
+SELECT
+    e.empname,
+    s.basic AS latest_basic_pay
+FROM
+    emp e
+JOIN
+    salary s ON e.empcode = s.empcode
+WHERE
+    s.salmonth = (SELECT MAX(salmonth) FROM salary WHERE empcode = e.empcode) AND
+    s.basic > (
+        SELECT basic FROM salary
+        WHERE empcode = (SELECT empcode FROM emp WHERE empname = 'Jain')
+        ORDER BY salmonth DESC LIMIT 1
+    );
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+39. List all employees who have a higher salary than all employees drawing a salary between 11000 and 12000.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay > (
+        SELECT MAX(basicpay) FROM emp WHERE basicpay BETWEEN 11000 AND 12000
+    );
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+40. List all employees who have greater than average pay, ordered by salary.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay > (SELECT AVG(basicpay) FROM emp)
+ORDER BY
+    basicpay ASC;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+41. List the employee(s) who draw the highest salary.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay = (SELECT MAX(basicpay) FROM emp);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+42. List all employees other than those who draw the highest salary.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay < (SELECT MAX(basicpay) FROM emp);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+43. List the employees who draw the highest salary in each department.
+
+Generated sql
+SELECT
+    d.dept_name,
+    e.empname,
+    e.basicpay
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+WHERE
+    (e.deptcode, e.basicpay) IN (
+        SELECT deptcode, MAX(basicpay)
+        FROM emp
+        GROUP BY deptcode
+    );
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+44. List the employee(s) getting the second highest salary.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay = (
+        SELECT MAX(basicpay) FROM emp
+        WHERE basicpay < (SELECT MAX(basicpay) FROM emp)
+    );
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+45. List the employee(s) getting the fifth highest salary.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+ORDER BY
+    basicpay DESC
+LIMIT 1 OFFSET 4;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+46. List the female employee who draws the highest salary among all female employees.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    sex = 'F' AND
+    basicpay = (SELECT MAX(basicpay) FROM emp WHERE sex = 'F');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+47. List the department name of the female employee who draws the highest salary.
+
+Generated sql
+SELECT
+    d.dept_name
+FROM
+    dept d
+JOIN
+    emp e ON d.deptcode = e.deptcode
+WHERE
+    e.sex = 'F' AND
+    e.basicpay = (SELECT MAX(basicpay) FROM emp WHERE sex = 'F');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+48. List the department manager of the department where the highest-paid female employee works.
+
+Generated sql
+SELECT
+    m.empname AS manager_name
+FROM
+    emp m
+WHERE
+    m.desigcode = 'MNGR' AND
+    m.deptcode = (
+        SELECT deptcode FROM emp
+        WHERE sex = 'F'
+        ORDER BY basicpay DESC
+        LIMIT 1
+    );
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+49. List all male employees who draw a salary greater than at least one female employee.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    sex = 'M' AND
+    basicpay > (SELECT MIN(basicpay) FROM emp WHERE sex = 'F');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+50. List the departments where the average salary is more than the company's average salary.
+
+Generated sql
+SELECT
+    d.dept_name,
+    AVG(e.basicpay) AS avg_dept_salary
+FROM
+    emp e
+JOIN
+    dept d ON e.deptcode = d.deptcode
+GROUP BY
+    d.dept_name
+HAVING
+    AVG(e.basicpay) > (SELECT AVG(basicpay) FROM emp);
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
+
+51. List employees drawing a salary less than the average salary of the ‘accounts’ department.
+
+Generated sql
+SELECT
+    empname,
+    basicpay
+FROM
+    emp
+WHERE
+    basicpay < (
+        SELECT AVG(basicpay) FROM emp
+        WHERE deptcode = 'ACCT'
+    );
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+SQL
+IGNORE_WHEN_COPYING_END
